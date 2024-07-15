@@ -4,7 +4,7 @@ import crypto from 'crypto';
 
 export default function handler(req = NextApiRequest, res = NextApiResponse) {
   if (req.method === 'POST') {
-    const secret = process.env.SB-Mid-server-7kRmSxtejJcnziEVnW6aW1VS; // Your Midtrans server key
+    const secret = process.env['SB-Mid-server-7kRmSxtejJcnziEVnW6aW1VS']; // Your Midtrans server key
     const signatureKey = req.headers['x-midtrans-signature-key'];
 
     // Validate the signature
