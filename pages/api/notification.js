@@ -1,14 +1,13 @@
 // pages/api/notification.js
-
-let transactions = {};
+import { saveTransaction } from '../../lib/transactions';
 
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         const notification = req.body;
         console.log('Midtrans Notification:', notification);
 
-        // Simpan notifikasi ke dalam memori
-        transactions[notification.order_id] = notification;
+        // Save notification to centralized storage
+        saveTransaction(notification);
 
         // Logika untuk memproses notifikasi
         switch (notification.transaction_status) {
