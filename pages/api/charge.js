@@ -1,5 +1,3 @@
-import fetch from 'node-fetch';
-
 export default async function handler(req, res) {
   const serverKey = 'SB-Mid-server-7kRmSxtejJcnziEVnW6aW1VS'; // Ganti dengan server key Anda
   const apiUrl = 'https://app.sandbox.midtrans.com/snap/v1/transactions'; // URL API sandbox
