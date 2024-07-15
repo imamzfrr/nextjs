@@ -1,12 +1,17 @@
-// pages/api/notification.js
-export default function handler(req, res) {
+// /pages/api/notification.js
+
+export default async function handler(req, res) {
   if (req.method === 'POST') {
-    const notificationData = req.body;
-
-    // Log or process the notification data as needed
-    console.log('Received notification:', notificationData);
-
-    // Always respond with HTTP 200 status to acknowledge the notification
+    const notification = req.body;
+    
+    // Logika untuk memproses notifikasi
+    if (notification.transaction_status === 'settlement') {
+      // Transaksi berhasil
+      console.log('Transaksi berhasil:', notification);
+    } else {
+      console.log('Status transaksi:', notification.transaction_status);
+    }
+    
     res.status(200).json({ message: 'Notification received' });
   } else {
     res.setHeader('Allow', ['POST']);
