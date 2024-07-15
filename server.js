@@ -1,68 +1,67 @@
 const express = require('express');
-const next = require('next');
 const http = require('http');
-const socketIo = require('socket.io');
+const WebSocket = require('ws');
 const bodyParser = require('body-parser');
-require('dotenv').config();
+const mongoose = require('mongoose');
+const firebaseAdmin = require('firebase-admin');
+const dotenv = require('dotenv');
 
-const dev = process.env.NODE_ENV !== 'production';
-const app = next({ dev });
-const handle = app.getRequestHandler();
+dotenv.config();
 
-app.prepare().then(() => {
-    const server = express();
-    const httpServer = http.createServer(server);
-    const io = socketIo(httpServer);
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
-    server.use(bodyParser.json());
+const serviceAccount = {
+  "type": "service_account",
+  "project_id": process.env.FIREBASE_PROJECT_ID,
+  "private_key_id": "1e62b611b90c71cff74df44bee6b209613e50f70",
+  "private_key": process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  "client_email": process.env.FIREBASE_CLIENT_EMAIL,
+  "client_id": "101772641218561106965",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-j2jwx%40parkbuddy-8ac10.iam.gserviceaccount.com"
+};
 
-    // Route API notification
-    server.post('/api/notification', async (req, res) => {
-        const notification = req.body;
-        const orderId = notification.order_id;
-        const transactionStatus = notification.transaction_status;
+firebaseAdmin.initializeApp({
+  credential: firebaseAdmin.credential.cert(serviceAccount)
+});
 
-        // Emit update ke client melalui WebSocket
-        io.emit('transaction-update', { orderId, transactionStatus });
+app.use(bodyParser.json());
 
-        // Logika untuk memproses notifikasi dan update database
-        switch (transactionStatus) {
-            case 'settlement':
-                await updateTransactionStatus(orderId, 'settlement');
-                break;
-            case 'pending':
-                await updateTransactionStatus(orderId, 'pending');
-                break;
-            case 'deny':
-                await updateTransactionStatus(orderId, 'deny');
-                break;
-            case 'expire':
-                await updateTransactionStatus(orderId, 'expire');
-                break;
-            case 'cancel':
-                await updateTransactionStatus(orderId, 'cancel');
-                break;
-            default:
-                console.log('Status transaksi tidak dikenal:', transactionStatus);
-        }
+mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.log(err));
 
-        res.status(200).json({ message: 'Notification received and transaction status updated' });
-    });
+app.post('/notification', (req, res) => {
+  const notification = req.body;
+  // Logika untuk memproses notifikasi dan update database
+  console.log('Received notification:', notification);
 
-    server.all('*', (req, res) => {
-        return handle(req, res);
-    });
+  // Kirim pesan ke semua client WebSocket yang terhubung
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(notification));
+    }
+  });
 
-    const PORT = process.env.PORT || 3000;
-    httpServer.listen(PORT, (err) => {
-        if (err) throw err;
-        console.log(`> Ready on http://localhost:${PORT}`);
-    });
+  res.status(200).send('Notification received');
+});
 
-    io.on('connection', (socket) => {
-        console.log('New client connected');
-        socket.on('disconnect', () => {
-            console.log('Client disconnected');
-        });
-    });
+wss.on('connection', ws => {
+  console.log('New client connected');
+  
+  ws.on('message', message => {
+    console.log('Received message:', message);
+  });
+
+  ws.on('close', () => {
+    console.log('Client disconnected');
+  });
+});
+
+server.listen(process.env.PORT, () => {
+  console.log(`Server is listening on port ${process.env.PORT}`);
 });
