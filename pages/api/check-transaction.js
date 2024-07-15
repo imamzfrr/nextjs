@@ -1,5 +1,3 @@
-// pages/api/check-transaction.js
-import { getTransaction } from '../../lib/transaction';
 
 export default async function handler(req, res) {
     if (req.method === 'GET') {
