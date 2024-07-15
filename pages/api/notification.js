@@ -3,9 +3,6 @@ export default async function handler(req, res) {
         const notification = req.body;
         console.log('Midtrans Notification:', notification);
 
-        // Save notification to centralized storage
-        saveTransaction(notification);
-
         // Logika untuk memproses notifikasi
         switch (notification.transaction_status) {
             case 'settlement':
