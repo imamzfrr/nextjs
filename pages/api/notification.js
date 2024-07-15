@@ -1,6 +1,3 @@
-// pages/api/notification.js
-import { saveTransaction } from '../../lib/transactions';
-
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         const notification = req.body;
